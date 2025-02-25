@@ -1,23 +1,18 @@
 import { useState } from "react";
 import Head from "next/head";
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import styles from "src/styles/Home.module.css";
-import { Check, Delete, Plus } from "lucide-react";
+import { Check, Trash, Plus } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 type TodoItem = {
   id: number;
   text: string;
+  completed: boolean;
 }
 
 export default function Home() {
@@ -28,26 +23,35 @@ export default function Home() {
     setInputValue(e.target.value);
   };
 
-  const addItem = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const addItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() === "") {
-      console.log("Empty Input");
       return;
     }
 
-    console.log("New Item: ", inputValue);
     const newItem: TodoItem = {
       id: Date.now(),
       text: inputValue.trim(),
+      completed: false,
     }
 
     setTodoList((prevList) => [...prevList, newItem]);
     setInputValue("");
   }; 
 
+  const toggleComplete = (itemId: number) => {
+    setTodoList((prevList) => 
+      prevList.map((item) => 
+        item.id === itemId 
+          ? { ...item, completed: !item.completed } 
+          : item
+      )
+    );
+  };
+
   const removeItem = (e: React.MouseEvent<HTMLButtonElement>, itemId: number) => {
     e.preventDefault();
-
+    e.stopPropagation();
     setTodoList((prevList) => prevList.filter((item) => item.id !== itemId));
   };
   
@@ -59,46 +63,61 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <p className={`${styles.appName} ${geistSans.className}`}>
-        Todo List App
-      </p>
-      <div className={
-        `${styles.main} ${geistSans.className}`
-      }>
-        <div className={styles.formContainer}>
-          <form className={styles.form}>
-            <input 
-              className={styles.formInput} 
-              type="text" 
-              placeholder="Enter item ...."
-              value={inputValue}
-              onChange={handleInputChange}
-            />
-            <button 
-              className={styles.formAddButton} 
-              type="submit" 
-              onClick={addItem}
-            >
-                <Plus />
-            </button>
-          </form>
-        </div>
-        <div className={styles.listContainer}>
-          {todoList.map((item) => (
-            <div key={item.id} className={styles.todoContainer}>
-                <li key={item.id} className={styles.todoItem}>
-                  {item.text}
-                </li>
-                <button 
-                  className={styles.todoDeleteButton}
-                  type="submit"
-                  onClick={(e) => {removeItem(e, item.id)}}
+      <div className={geistSans.className}>
+        <h1 className={styles.appName}>
+          Todo List App
+        </h1>
+        <main className={styles.main}>
+          <div className={styles.formContainer}>
+            <form className={styles.form} onSubmit={addItem}>
+              <input 
+                className={styles.formInput} 
+                type="text" 
+                placeholder="Add a new task..."
+                value={inputValue}
+                onChange={handleInputChange}
+              />
+              <button 
+                className={styles.formAddButton} 
+                type="submit"
+              >
+                <Plus size={20} />
+              </button>
+            </form>
+          </div>
+          <div className={styles.listContainer}>
+            {todoList.length === 0 ? (
+              <p className="text-center text-gray-500 mt-6">No tasks yet. Add one above!</p>
+            ) : (
+              todoList.map((item) => (
+                <div 
+                  key={item.id} 
+                  className={styles.todoContainer}
+                  onClick={() => toggleComplete(item.id)}
                 >
-                  <Check />
-                </button>
-            </div>
-          ))}
-        </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div 
+                      className={`${styles.todoCheckbox} ${item.completed ? styles.todoCheckboxChecked : ''}`}
+                    >
+                      {item.completed && <Check size={14} />}
+                    </div>
+                    <li 
+                      className={`${styles.todoItem} ${item.completed ? styles.todoCompletedItem : ''}`}
+                    >
+                      {item.text}
+                    </li>
+                  </div>
+                  <button 
+                    className={styles.todoDeleteButton}
+                    onClick={(e) => removeItem(e, item.id)}
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </main>
       </div>
     </>
   );
